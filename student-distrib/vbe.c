@@ -33,7 +33,7 @@ void bga_set_video_mode(uint16_t w, uint16_t h, uint16_t bpp)
     bga_reg_write(VBE_DISPI_INDEX_XRES, w);
     bga_reg_write(VBE_DISPI_INDEX_YRES, h);
     bga_reg_write(VBE_DISPI_INDEX_BPP, bpp);
-    bga_reg_write(VBE_DISPI_INDEX_FB_BASE_HI, VBE_ADDR >> VBE_FB_BASE_HI_OFFSET);
+    bga_reg_write(VBE_DISPI_INDEX_FB_BASE_HI, VBE_FB_ADDR >> VBE_FB_BASE_HI_OFFSET);
     bga_reg_write(VBE_DISPI_INDEX_ENABLE, VBE_DISPI_ENABLED);
 }
 

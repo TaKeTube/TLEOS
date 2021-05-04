@@ -30,11 +30,13 @@
 
 #define VBE_DISPI_INDEX_FB_BASE_HI      0x0B
 
-#define VBE_ADDR                        0xFD000000
+#define VBE_FB_ADDR                     0xFD000000  /* This address can be seen from qemu info qtree */
 #define VBE_FB_BASE_HI_OFFSET           16
 
-#define VBE_DISPI_XRES                  1024
-#define VBE_DISPI_YRES                  768
+#define VBE_DISPI_XRES                  1600
+#define VBE_DISPI_YRES                  1200
+
+void copy_fb(void* fb_addr, void* vidmem_addr, int num_longwords);
 
 void bga_reg_write(uint16_t index, uint16_t value);
 

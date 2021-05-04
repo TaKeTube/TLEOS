@@ -17,6 +17,7 @@
 #include "terminal.h"
 #include "schedule.h"
 #include "gui.h"
+#include "pci.h"
 
 /* If it is set to 1, run test for CP1&2 (but tests may not be compatible with the code after CP3) */
 #define RUN_TESTS   0
@@ -201,6 +202,9 @@ void entry(unsigned long magic, unsigned long addr) {
     // /* launch the first terminal */
     // if(launch_first_terminal() == -1)
     //     printf("\n fail to launch first terminal.\n");
+
+    gui_test();
+
 #endif
 
     /* Spin (nicely, so we don't chew up cycles) */
