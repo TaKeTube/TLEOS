@@ -4,8 +4,8 @@
 
 #include "paging.h"
 #include "lib.h"
-#include "vbe.h"
-#include "graphics.h"
+#include "./GUI/vbe.h"
+#include "./GUI/graphics.h"
 
 /*
 *	paging_init

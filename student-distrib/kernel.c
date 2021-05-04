@@ -16,8 +16,7 @@
 #include "syscall.h"
 #include "terminal.h"
 #include "schedule.h"
-#include "gui.h"
-#include "pci.h"
+#include "./GUI/gui.h"
 
 /* If it is set to 1, run test for CP1&2 (but tests may not be compatible with the code after CP3) */
 #define RUN_TESTS   0
