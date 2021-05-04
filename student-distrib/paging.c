@@ -4,6 +4,7 @@
 
 #include "paging.h"
 #include "lib.h"
+#include "vbe.h"
 
 /*
 *	paging_init
@@ -36,6 +37,8 @@ void paging_init()
     enable_paging();
     /* activate the video memory page */
     activate_video();
+    /* set frame buffer page */
+    set_fb_page();
 }
 
 /*
@@ -165,6 +168,16 @@ void set_paging(uint32_t pid)
 
     /* flush TLB */
     flush_TLB();
+}
+
+void set_fb_page()
+{
+    uint32_t vbe_idx = VBE_ADDR / PAGE_4MB_SIZE;
+    
+    page_directory[vbe_idx].p = 1;
+    page_directory[vbe_idx].ps = 1;
+    page_directory[vbe_idx].g = 1;
+    page_directory[vbe_idx].base_addr = vbe_idx >> MEM_OFFSET_BITS;
 }
 
 /*

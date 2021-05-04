@@ -74,6 +74,8 @@ void enable_paging();
 void activate_video();
 /* set a page for according process */
 void set_paging(uint32_t pid);
+/* set frame buffer page */
+void set_fb_page();
 /* flush TLB */
 void flush_TLB();
 

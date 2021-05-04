@@ -16,6 +16,7 @@
 #include "syscall.h"
 #include "terminal.h"
 #include "schedule.h"
+#include "gui.h"
 
 /* If it is set to 1, run test for CP1&2 (but tests may not be compatible with the code after CP3) */
 #define RUN_TESTS   0
@@ -168,8 +169,8 @@ void entry(unsigned long magic, unsigned long addr) {
     rtc_init();
     /* init keyboard */
     keyboard_init();
-    /* init PIT */
-    pit_init();
+    // /* init PIT */
+    // pit_init();
 
     /* init file system */
     filesys_init((void*)filesys_start_addr);
@@ -179,6 +180,9 @@ void entry(unsigned long magic, unsigned long addr) {
 
     /* init multi-terminals */
     terminal_init();
+
+    /* init gui */
+    gui_init();
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
@@ -194,9 +198,9 @@ void entry(unsigned long magic, unsigned long addr) {
     /* Run tests */
     launch_tests();
 #else
-    /* launch the first terminal */
-    if(launch_first_terminal() == -1)
-        printf("\n fail to launch first terminal.\n");
+    // /* launch the first terminal */
+    // if(launch_first_terminal() == -1)
+    //     printf("\n fail to launch first terminal.\n");
 #endif
 
     /* Spin (nicely, so we don't chew up cycles) */
