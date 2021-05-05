@@ -1,15 +1,13 @@
 #include "graphics.h"
 
-void draw_pixel(int pos_x, int pos_y, color_t color, color_t *fb)
+inline void draw_pixel(int pos_x, int pos_y, int32_t color, int32_t *fb)
 {
     if (fb == NULL || pos_x < 0 || pos_y < 0 || pos_x >= VBE_DISPI_XRES || pos_y >= VBE_DISPI_YRES)
         return;
-    fb[pos_y * VBE_DISPI_XRES + pos_x].B = color.B;
-    fb[pos_y * VBE_DISPI_XRES + pos_x].G = color.G;
-    fb[pos_y * VBE_DISPI_XRES + pos_x].R = color.R;
+    fb[pos_y * VBE_DISPI_XRES + pos_x] = color;
 }
 
-void draw_rect(int upper_left_x, int upper_left_y, int width, int height, color_t color, color_t *fb)
+void draw_rect(int upper_left_x, int upper_left_y, int width, int height, int32_t color, int32_t *fb)
 {
     int i, j;
 
@@ -21,7 +19,7 @@ void draw_rect(int upper_left_x, int upper_left_y, int width, int height, color_
             draw_pixel(upper_left_x+i, upper_left_y+j, color, fb);
 }
 
-void text2image(int pos_x, int pos_y, color_t *fb, char *text, color_t text_color)
+void draw_text(int pos_x, int pos_y, int32_t *fb, char *text, int32_t text_color)
 {
     int i, j, k;                                    // loop indices
     int global_offset, local_offset;
@@ -49,9 +47,7 @@ void text2image(int pos_x, int pos_y, color_t *fb, char *text, color_t text_colo
                 if (mask & bitmap[j / FONT_MAGNIFICATION])
                 {
                     local_offset = (FONT_WIDTH * i) + (VBE_DISPI_XRES * j) + k;
-                    fb[global_offset + local_offset].B = text_color.B;
-                    fb[global_offset + local_offset].G = text_color.G;
-                    fb[global_offset + local_offset].R = text_color.R;
+                    fb[global_offset + local_offset] = text_color;
                 }
                 /* right shift mask by a bit*/
                 mask >>= 1;

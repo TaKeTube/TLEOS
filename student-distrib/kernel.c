@@ -202,7 +202,9 @@ void entry(unsigned long magic, unsigned long addr) {
     // if(launch_first_terminal() == -1)
     //     printf("\n fail to launch first terminal.\n");
 
-    gui_test();
+    // gui_test();
+
+    render_screen();
 
 #endif
 
