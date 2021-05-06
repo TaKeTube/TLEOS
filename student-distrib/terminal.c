@@ -7,6 +7,7 @@
 #include "keyboard.h"
 #include "syscall.h"
 #include "lib.h"
+#include "./GUI/gui.h"
 
 /* MACRO for the sake of briefness */
 #define CHECK_FAIL_RETURN(value) \
@@ -39,7 +40,11 @@ int32_t terminal_init()
         terminals[i].cursor_y = 0;
         terminals[i].is_enter = 0;
         terminals[i].term_buf_offset = 0;
+#if USING_GUI
+        terminals[i].vid_buf = (uint8_t *)(FRAME_BUFFER_2_ADDR+(i+1)*PAGE_4KB_SIZE);
+#else
         terminals[i].vid_buf = (uint8_t *)(VIDEO+(i+1)*PAGE_4KB_SIZE);
+#endif
         /* init page for video buffer */
         set_vid_buf_page(i);
         /* init terminal buffer */
@@ -84,6 +89,10 @@ int32_t terminal_switch(uint32_t term_id)
     {
         /* remap the virtual video memory because terminal changes */
         uint32_t curr_process_term_id = get_pcb_ptr(curr_pid)->term_id;
+#if USING_GUI
+        CHECK_FAIL_RETURN(vid_remap(terminals[curr_process_term_id].vid_buf));
+        video_mem = (char*)terminals[curr_process_term_id].vid_buf;
+#else
         if (curr_process_term_id != curr_term_id)
         {
             /* if the current process is executed by current terminal, remap virtual vidmem to physical vidmem */
@@ -94,6 +103,7 @@ int32_t terminal_switch(uint32_t term_id)
             /* if not, remap virtual vidmem to current process's terminal's video buffer */
             CHECK_FAIL_RETURN(vid_remap(terminals[curr_process_term_id].vid_buf));
         }
+#endif
     }
     else
     {
@@ -103,8 +113,14 @@ int32_t terminal_switch(uint32_t term_id)
         /* update new terminal info, remap vidmem */
         terminals[curr_term_id].is_running = 1;
         running_term_num++;
-        CHECK_FAIL_RETURN(vid_remap((uint8_t *)VIDEO));
 
+#if USING_GUI
+        uint32_t curr_process_term_id = get_pcb_ptr(curr_pid)->term_id;
+        CHECK_FAIL_RETURN(vid_remap(terminals[curr_process_term_id].vid_buf));
+        video_mem = (char*)terminals[curr_process_term_id].vid_buf;
+#else
+        CHECK_FAIL_RETURN(vid_remap((uint8_t *)VIDEO));
+#endif
         /* execute new shell for this new terminal */
         execute((uint8_t *)"shell");
     }
@@ -132,8 +148,10 @@ int32_t terminal_save(uint32_t term_id)
     terminals[term_id].cursor_x = get_screen_x();
     terminals[term_id].cursor_y = get_screen_y();
 
+#if !USING_GUI
     /* save video memory */
     memcpy((uint8_t *)terminals[term_id].vid_buf, (uint8_t *)VIDEO, VIDBUF_SIZE);
+#endif
 
     /* success, return 0 */
     return 0;
@@ -159,8 +177,10 @@ int32_t terminal_restore(uint32_t term_id)
     /* restore current cursor position */
     set_screen_xy(terminals[term_id].cursor_x, terminals[term_id].cursor_y);
 
+#if !USING_GUI
     /* restore video memory */
     memcpy((uint8_t *)VIDEO, (uint8_t *)terminals[term_id].vid_buf, VIDBUF_SIZE);
+#endif
 
     /* success, return 0 */
     return 0;
@@ -182,7 +202,7 @@ int32_t launch_first_terminal(){
     /* update terminal info */
     running_term_num = 1;
     terminals[FIRST_TERMINAL_ID].is_running = 1;
-
+    video_mem = (char*)terminals[FIRST_TERMINAL_ID].vid_buf;
     /* launch the first shell */
     CHECK_FAIL_RETURN(execute((uint8_t*)"shell"));
 
@@ -316,6 +336,21 @@ int32_t terminal_write(int32_t fd, void *buf, int32_t nbytes)
     /* disable interrupt, avoid scheduling problem */
     cli();
 
+#if USING_GUI
+
+    for (i = 0; i < nbytes; i++)
+    {
+        if (((char *)buf)[i] != '\0')
+        {
+            /* we only write none \0 char to terminal */
+            terminal_putc(((char *)buf)[i]);
+            /* increment ret */
+            ret++;
+        }
+    }
+
+#else
+
     /* check whether current process' terminal is the foreground terminal */
     if (get_pcb_ptr(curr_pid)->term_id == curr_term_id)
     {
@@ -345,6 +380,8 @@ int32_t terminal_write(int32_t fd, void *buf, int32_t nbytes)
             }
         }
     }
+
+#endif
 
     /* enable interrupt */
     sti();

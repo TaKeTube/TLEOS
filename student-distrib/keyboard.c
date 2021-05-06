@@ -1,5 +1,5 @@
-#include "keyboard.h"
 #include "lib.h"
+#include "keyboard.h"
 #include "i8259.h"
 #include "terminal.h"
 #include "syscall.h"
@@ -51,6 +51,149 @@ void keyboard_init(){
 *	outputs: nothing
 *	side effects: echo current pressed key to screen
 */
+#if USING_GUI
+
+void keyboard_handler(){
+    unsigned char scancode = 0;     /* scanned code */
+    int i;                          /* loop index for tab */
+
+    /* enable pic interrupt */
+    send_eoi(KEYBOARD_IRQ);
+
+    /* get current foreground terminal and its buffer */
+    terminal_t* curr_term = &terminals[curr_term_id];
+    volatile uint8_t* read_buffer = curr_term->term_buf;
+
+    /* wait for interrupt */
+    while(1){
+        if (inb(KEYBOARD_PORT)){
+            scancode = inb(KEYBOARD_PORT);
+            break;
+        }
+    }
+
+    switch (scancode){
+        case CAPS_LOCK:
+            caps_state = ~caps_state;
+            break;
+        case LSHIFT_DOWN:
+            shift_state = 1;
+            break;
+        case RSHIFT_DOWN:
+            shift_state = 1;
+            break;
+        case LSHIFT_UP:
+            shift_state = 0;
+            break;
+        case RSHIFT_UP:
+            shift_state = 0;
+            break;
+        case CTRL_DOWN:
+            ctrl_state = 1;
+            break;
+        case CTRL_UP:
+            ctrl_state = 0;
+            break;
+        case ALT_DOWN:
+            alt_state = 1;
+            break;
+        case ALT_UP:
+            alt_state = 0;
+            break;
+        case ENTER:
+            read_buffer[curr_term->term_buf_offset] = '\n';
+            curr_term->term_buf_offset += 1;
+            /* if enter is pressed, set flag is_enter to tell the foreground terminal ready to read */
+            terminals[curr_term_id].is_enter = 1;
+            window_newline();
+            break;
+        case BACKSPACE:
+            /* handle backspace */
+            if (curr_term->term_buf_offset>0){
+                curr_term->term_buf_offset -= 1;
+                read_buffer[curr_term->term_buf_offset] = '\0';
+                window_delc();
+            }
+            break;
+        case TAB:
+            /* one table is equal to 4 space */
+            for (i=0; i<4; i++){
+                read_buffer[curr_term->term_buf_offset] = ' ';
+                curr_term->term_buf_offset += 1;
+                window_putc(' '); 
+            }
+            break;
+        default:
+            /* print scancode */
+            print_key(scancode);
+            break;
+    }
+}
+
+/*
+*	print_key
+*	Description: If a valid scancode needs to be printed, show it to screen (foreground terminal regardless of scheduler).
+*	inputs:	 a scancode from keyboard.
+*	outputs: nothing
+*	side effects: echo character corresponds to scancode to screen.
+*/
+void print_key(unsigned char scancode){
+    unsigned char key;  /* corresponding key value */
+    
+    /* get current foreground terminal and its buffer */
+    terminal_t* curr_term = &terminals[curr_term_id];
+    volatile uint8_t* read_buffer = curr_term->term_buf;
+
+    /* for alt+Fkeys, switch the terminal */
+    if(alt_state){
+        if (scancode == F1)
+            terminal_switch(0);
+        else if (scancode == F2)
+            terminal_switch(1);
+        else if (scancode == F3)
+            terminal_switch(2);
+    }
+
+    /* select different key modes based on shift and cpas state */
+    if (scancode >= KEY_NUM)
+        return;
+    else if (shift_state & caps_state){
+        key = key_table[3][scancode];
+    }
+    else if (shift_state & (~caps_state)){
+        key = key_table[1][scancode];
+    }
+    else if ((~shift_state) & caps_state){
+        key = key_table[2][scancode];
+    }
+    else{
+        key = key_table[0][scancode];
+    }
+
+    /* we do not need print these NULL keys */
+    if (key == '\0')
+        return;
+    /* for ctrl+L, we clear the screen */
+    else if (ctrl_state){
+        if (key == 'l' || key == 'L'){
+            window_clear();
+            window_reset_screen_xy();
+            return;
+        }
+        else if (key == 'c')
+            return;
+    }
+    /* print the correct key to the foreground */
+    else if (curr_term->term_buf_offset < READ_BUFFER_SIZE){
+        read_buffer[curr_term->term_buf_offset] = key;
+        curr_term->term_buf_offset += 1;
+        window_putc(key);
+    }
+    return;
+}
+
+#else
+
 void keyboard_handler(){
     unsigned char scancode = 0;     /* scanned code */
     int i;                          /* loop index for tab */
@@ -190,6 +333,8 @@ void print_key(unsigned char scancode){
     }
     return;
 }
+
+#endif
 
 /*
 *	clr_read_buffer

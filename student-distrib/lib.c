@@ -7,7 +7,10 @@
 
 static int screen_x;
 static int screen_y;
+
+#if !USING_GUI
 static char* video_mem = (char *)VIDEO;
+#endif
 
 /* void clear(void);
  * Inputs: void
@@ -833,3 +836,241 @@ void terminal_scroll_up() {
 		*(uint8_t *)(terminals[id].vid_buf + ((NUM_COLS*(NUM_ROWS-1) + x) << 1)) = ' ';
 	}
 }
+
+// =============================================================================
+
+#if USING_GUI
+
+// ==============================================================================
+
+/* void clear(void);
+ * Inputs: void
+ * Return Value: none
+ * Function: Clears video memory */
+void window_clear(void) {
+    int32_t i;
+    for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
+        *(uint8_t *)(terminals[curr_term_id].vid_buf + (i << 1)) = ' ';
+        *(uint8_t *)(terminals[curr_term_id].vid_buf + (i << 1) + 1) = ATTRIB;
+    }
+}
+
+/* void reset_screen_xy();
+ * Inputs: void
+ * Return Value: none
+ * Function: Reset input position on the screen */
+void window_reset_screen_xy(){
+    terminals[curr_term_id].cursor_x = 0;
+    terminals[curr_term_id].cursor_y = 0;
+    return;
+}
+
+/* set_screen_xy
+ * Inputs: x,y -- cursor's position
+ * Return Value: none
+ * Function: set cursor's x,y position */
+void window_set_screen_xy(int x, int y)
+{
+    terminals[curr_term_id].cursor_x = x;
+    terminals[curr_term_id].cursor_y = y;
+}
+
+/* void scroll_up();
+ * Inputs: nothing
+ * Return Value: void
+ *  Function: shift up the content in screen */
+void window_scroll_up() 
+{
+	int x;
+	int y;
+    uint32_t id = curr_term_id;
+    // shift existing content up, and fill last row with spaces
+    while (terminals[id].cursor_y>=NUM_ROWS){
+	    for (x = 0; x < NUM_COLS; x++) {
+	    	for (y = 0; y < NUM_ROWS-1; y++) {
+	    		*(uint8_t *)(terminals[id].vid_buf + ((NUM_COLS*y + x) << 1)) = *(uint8_t *)(terminals[id].vid_buf + ((NUM_COLS*(y+1) + x) << 1));
+	    	}
+	    }
+        terminals[id].cursor_y --;
+    }
+	for (x = 0; x < NUM_COLS; x++) {
+		*(uint8_t *)(terminals[id].vid_buf + ((NUM_COLS*(NUM_ROWS-1) + x) << 1)) = ' ';
+	}
+}
+
+/* void newline();
+ * Inputs: nothing
+ * Return Value: void
+ *  Function: Perform newline */
+void window_newline()
+{
+    uint32_t id = curr_term_id;
+    terminals[id].cursor_y ++;
+    window_scroll_up();
+    terminals[id].cursor_x = 0;
+}
+
+/* void terminal_putc(uint8_t c);
+ * Inputs: uint_8* c = character to print
+ * Return Value: void
+ *  Function: Output a character to current process' terminal's video buffer */
+void window_putc(uint8_t c) 
+{
+    uint32_t id = curr_term_id;
+
+    if(c == '\n' || c == '\r') {
+        window_newline();
+        return;
+    } 
+
+    *(uint8_t *)(terminals[id].vid_buf + ((NUM_COLS * terminals[id].cursor_y + terminals[id].cursor_x) << 1)) = c;
+    *(uint8_t *)(terminals[id].vid_buf + ((NUM_COLS * terminals[id].cursor_y + terminals[id].cursor_x) << 1) + 1) = ATTRIB;
+    terminals[id].cursor_x++;
+    // screen_x %= NUM_COLS;
+    // screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+    
+    if(terminals[id].cursor_x == NUM_COLS)
+        window_newline();
+}
+
+int32_t window_printf(int8_t *format, ...) {
+
+    /* Pointer to the format string */
+    int8_t* buf = format;
+
+    /* Stack pointer for the other parameters */
+    int32_t* esp = (void *)&format;
+    esp++;
+
+    while (*buf != '\0') {
+        switch (*buf) {
+            case '%':
+                {
+                    int32_t alternate = 0;
+                    buf++;
+
+format_char_switch:
+                    /* Conversion specifiers */
+                    switch (*buf) {
+                        /* Print a literal '%' character */
+                        case '%':
+                            window_putc('%');
+                            break;
+
+                        /* Use alternate formatting */
+                        case '#':
+                            alternate = 1;
+                            buf++;
+                            /* Yes, I know gotos are bad.  This is the
+                             * most elegant and general way to do this,
+                             * IMHO. */
+                            goto format_char_switch;
+
+                        /* Print a number in hexadecimal form */
+                        case 'x':
+                            {
+                                int8_t conv_buf[64];
+                                if (alternate == 0) {
+                                    itoa(*((uint32_t *)esp), conv_buf, 16);
+                                    window_puts(conv_buf);
+                                } else {
+                                    int32_t starting_index;
+                                    int32_t i;
+                                    itoa(*((uint32_t *)esp), &conv_buf[8], 16);
+                                    i = starting_index = strlen(&conv_buf[8]);
+                                    while(i < 8) {
+                                        conv_buf[i] = '0';
+                                        i++;
+                                    }
+                                    window_puts(&conv_buf[starting_index]);
+                                }
+                                esp++;
+                            }
+                            break;
+
+                        /* Print a number in unsigned int form */
+                        case 'u':
+                            {
+                                int8_t conv_buf[36];
+                                itoa(*((uint32_t *)esp), conv_buf, 10);
+                                window_puts(conv_buf);
+                                esp++;
+                            }
+                            break;
+
+                        /* Print a number in signed int form */
+                        case 'd':
+                            {
+                                int8_t conv_buf[36];
+                                int32_t value = *((int32_t *)esp);
+                                if(value < 0) {
+                                    conv_buf[0] = '-';
+                                    itoa(-value, &conv_buf[1], 10);
+                                } else {
+                                    itoa(value, conv_buf, 10);
+                                }
+                                window_puts(conv_buf);
+                                esp++;
+                            }
+                            break;
+
+                        /* Print a single character */
+                        case 'c':
+                            window_putc((uint8_t) *((int32_t *)esp));
+                            esp++;
+                            break;
+
+                        /* Print a NULL-terminated string */
+                        case 's':
+                            window_puts(*((int8_t **)esp));
+                            esp++;
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                }
+                break;
+
+            default:
+                window_putc(*buf);
+                break;
+        }
+        buf++;
+    }
+    return (buf - format);
+}
+
+/* int32_t terminal_puts(int8_t* s);
+ *   Inputs: int_8* s = pointer to a string of characters
+ *   Return Value: Number of bytes written
+ *    Function: Output a string to current process' terminal's video buffer */
+int32_t window_puts(int8_t* s) {
+    register int32_t index = 0;
+    while (s[index] != '\0') {
+        window_putc(s[index]);
+        index++;
+    }
+    return index;
+}
+
+/* void delc();
+ * Inputs: nothing
+ * Return Value: void
+ *  Function: Perform backspaces */
+void window_delc() {
+    uint32_t id = curr_term_id;
+
+    if (terminals[id].cursor_x == 0){
+        terminals[id].cursor_y--;
+        terminals[id].cursor_x = NUM_COLS-1;
+    }
+	else
+		terminals[id].cursor_x--;
+    
+    *(uint8_t *)(terminals[id].vid_buf + ((NUM_COLS * terminals[id].cursor_y + terminals[id].cursor_x) << 1)) = ' ';
+    *(uint8_t *)(terminals[id].vid_buf + ((NUM_COLS * terminals[id].cursor_y + terminals[id].cursor_x) << 1) + 1) = ATTRIB;
+}
+
+#endif

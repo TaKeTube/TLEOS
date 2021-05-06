@@ -4,7 +4,7 @@
  */
 #include "vbe.h"
 
-void copy_fb(void* fb_addr, void* vidmem_addr, int num_longwords) {
+inline void copy_fb(void* fb_addr, void* vidmem_addr, int num_longwords) {
     asm volatile ("                                             \n\
         cld                                                     \n\
         rep movsl    /* copy ECX bytes from M[ESI] to M[EDI] */ \n\
@@ -13,6 +13,25 @@ void copy_fb(void* fb_addr, void* vidmem_addr, int num_longwords) {
     : "S"(fb_addr), "D"(vidmem_addr), "c"(num_longwords)
     : "eax", "memory"
     );
+}
+
+// inline void fill_fb(int32_t color, void* vidmem_addr, int num_longwords) {
+//     asm volatile ("                                             \n\
+//         movl %0, %%eax                                          \n\
+//         cld                                                     \n\
+//         rep stosl      /* copy ECX bytes from %eax to M[EDI] */ \n\
+//         "
+//     : /* no outputs */
+//     : "r"(color), "S"(0), "D"(vidmem_addr), "c"(num_longwords)
+//     : "eax", "memory"
+//     );
+// }
+
+void copy_block(int32_t* fb_addr, int32_t* vidmem_addr, int offset, int w, int h){
+    int i;
+    int j;
+    for(i = 0, j = 0; i < h; i++, j+=w)
+        copy_fb(fb_addr + offset + j, vidmem_addr, w);
 }
 
 void bga_reg_write(uint16_t index, uint16_t data)

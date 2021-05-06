@@ -2,8 +2,8 @@
 
 inline void draw_pixel(int pos_x, int pos_y, int32_t color, int32_t *fb)
 {
-    if (fb == NULL || pos_x < 0 || pos_y < 0 || pos_x >= VBE_DISPI_XRES || pos_y >= VBE_DISPI_YRES)
-        return;
+    // if (fb == NULL || pos_x < 0 || pos_y < 0 || pos_x >= VBE_DISPI_XRES || pos_y >= VBE_DISPI_YRES)
+    //     return;
     fb[pos_y * VBE_DISPI_XRES + pos_x] = color;
 }
 
@@ -36,15 +36,15 @@ void draw_text(int pos_x, int pos_y, int32_t *fb, char *text, int32_t text_color
     {
         unsigned char *bitmap = font_data[(int)text[i]];   // read that character's info from font_data
         /* loop that character in row major way */
-        for (j = 0; j < FONT_HEIGHT * FONT_MAGNIFICATION; j++)
+        for (j = 0; j < (FONT_HEIGHT << FONT_MAGNIFICATION); j++)
         {
             /* mask value init to 0x80 = 0b10000000, which will be shifted to right bit by bit */
             unsigned char mask = 0x80;      
             /* loop every pixel in the current row */
-            for (k = 0; k < FONT_WIDTH * FONT_MAGNIFICATION; k++)
+            for (k = 0; k < (FONT_WIDTH << FONT_MAGNIFICATION); k++)
             {
                 /* mask to check the corresponding bit and set the pixel to input color */
-                if (mask & bitmap[j / FONT_MAGNIFICATION])
+                if (mask & bitmap[j >> FONT_MAGNIFICATION])
                 {
                     local_offset = (FONT_WIDTH * i) + (VBE_DISPI_XRES * j) + k;
                     fb[global_offset + local_offset] = text_color;

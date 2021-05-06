@@ -81,11 +81,15 @@ int32_t halt(uint8_t status)
     /* decide return value according to the halt status */
     retval = (status == HALT_EXCEPTION) ? HALT_EXCEPTION_RETVAL : (uint16_t)status;
 
+#if USING_GUI
+    terminal_putc('\n');
+#else
     /* add an line break to fix a small deficiency of the shell program */
     if(parent_pcb->term_id == curr_term_id)
         putc('\n');
     else
         terminal_putc('\n');
+#endif
 
     /* halt and enable interrupt */
     asm volatile("              \n\

@@ -29,6 +29,10 @@
    pointed by ADDR. */
 void entry(unsigned long magic, unsigned long addr) {
 
+#if USING_GUI
+    video_mem = (char*)VIDEO;
+#endif
+
     multiboot_info_t *mbi;
 
     /* start addr of the file system image */
@@ -169,8 +173,8 @@ void entry(unsigned long magic, unsigned long addr) {
     rtc_init();
     /* init keyboard */
     keyboard_init();
-    // /* init PIT */
-    // pit_init();
+    /* init PIT */
+    pit_init();
 
     /* init file system */
     filesys_init((void*)filesys_start_addr);
@@ -183,6 +187,8 @@ void entry(unsigned long magic, unsigned long addr) {
 
     /* init gui */
     gui_init();
+
+    gui_render_screen();
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
@@ -199,12 +205,18 @@ void entry(unsigned long magic, unsigned long addr) {
     launch_tests();
 #else
     // /* launch the first terminal */
-    // if(launch_first_terminal() == -1)
-    //     printf("\n fail to launch first terminal.\n");
-
+    while(1){
+        if(curr_pid == -1){
+            if(launch_first_terminal() == -1){
+                printf("\n fail to launch first terminal.\n");
+                break;
+            }
+        }
+    }
     // gui_test();
 
-    render_screen();
+    // while(1)
+    //     gui_update_status_bar((int32_t*)FRAME_BUFFER_1_ADDR, STATUS_BAR_COLOR);
 
 #endif
 

@@ -4,6 +4,7 @@
 #include "i8259.h"
 #include "tests.h"
 #include "terminal.h"
+#include "./GUI/gui.h"
 
 /* Reference: https://wiki.osdev.org/RTC */
 

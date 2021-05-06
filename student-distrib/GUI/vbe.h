@@ -36,7 +36,11 @@
 #define VBE_DISPI_XRES                  1600
 #define VBE_DISPI_YRES                  1200
 
-void copy_fb(void* fb_addr, void* vidmem_addr, int num_longwords);
+inline void copy_fb(void* fb_addr, void* vidmem_addr, int num_longwords);
+
+// inline void fill_fb(int32_t color, void* vidmem_addr, int num_longwords);
+
+void copy_block(int32_t* fb_addr, int32_t* vidmem_addr, int offset, int w, int h);
 
 void bga_reg_write(uint16_t index, uint16_t value);
 

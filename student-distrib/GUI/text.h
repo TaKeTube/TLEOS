@@ -41,7 +41,7 @@
 #define FONT_WIDTH   8
 #define FONT_HEIGHT  16
 
-#define FONT_MAGNIFICATION  3
+#define FONT_MAGNIFICATION  0
 
 /* Standard VGA text font. */
 extern unsigned char font_data[256][16];

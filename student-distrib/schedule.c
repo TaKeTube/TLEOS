@@ -3,6 +3,7 @@
 #include "syscall.h"
 #include "x86_desc.h"
 #include "lib.h"
+#include "./GUI/gui.h"
 
 /* Reference: https://wiki.osdev.org/Programmable_Interval_Timer */
 
@@ -46,6 +47,8 @@ void pit_handler()
     send_eoi(PIT_IRQ);
     /* call scheduler */
     scheduler();
+    /* render screen */
+    gui_update_screen();
 }
 
 /*
@@ -91,10 +94,14 @@ void scheduler()
     set_paging(next_pid);
 
     /* remap video memory */
+#if USING_GUI
+    vid_remap(terminals[next_term_id].vid_buf);
+#else
     if(next_term_id == curr_term_id)
         vid_remap((uint8_t *)VIDEO);
     else
         vid_remap(terminals[next_term_id].vid_buf);
+#endif
 
     /* get next process's pcb */
     next_pcb = get_pcb_ptr(next_pid);

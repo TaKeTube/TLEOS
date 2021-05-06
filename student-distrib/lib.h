@@ -7,11 +7,30 @@
 
 #include "types.h"
 
+#define USING_GUI   1
+
 #define VIDEO       0xB8000
 #define NUM_COLS    80
 #define NUM_ROWS    25
 #define ATTRIB      0x7
-#define VIDBUF_SIZE 2*NUM_COLS*NUM_ROWS
+#define VIDBUF_SIZE (2*NUM_COLS*NUM_ROWS)
+
+#if USING_GUI
+
+char* video_mem;
+
+void window_clear(void);
+void window_reset_screen_xy();
+void window_set_screen_xy(int x, int y);
+
+void window_scroll_up();
+void window_putc(uint8_t c);
+void window_delc();
+void window_newline();
+int32_t window_printf(int8_t *format, ...);
+int32_t window_puts(int8_t* s);
+
+#endif
 
 int32_t printf(int8_t *format, ...);
 void putc(uint8_t c);
