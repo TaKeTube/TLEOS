@@ -204,7 +204,7 @@ void entry(unsigned long magic, unsigned long addr) {
     /* Run tests */
     launch_tests();
 #else
-    // /* launch the first terminal */
+    /* launch the first terminal */
     while(1){
         if(curr_pid == -1){
             if(launch_first_terminal() == -1){
