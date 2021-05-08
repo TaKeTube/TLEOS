@@ -1,0 +1,35 @@
+boot.o: boot.S multiboot.h x86_desc.h types.h
+interrupt_linkage.o: interrupt_linkage.S interrupt_linkage.h
+syscall_linkage.o: syscall_linkage.S syscall_linkage.h
+x86_desc.o: x86_desc.S x86_desc.h types.h
+exception.o: exception.c lib.h types.h exception.h syscall.h filesys.h \
+  paging.h
+filesys.o: filesys.c lib.h types.h filesys.h syscall.h paging.h
+i8259.o: i8259.c i8259.h types.h lib.h
+idt.o: idt.c lib.h types.h x86_desc.h idt.h exception.h \
+  interrupt_linkage.h
+kernel.o: kernel.c multiboot.h types.h x86_desc.h lib.h i8259.h debug.h \
+  tests.h idt.h rtc.h syscall.h filesys.h paging.h keyboard.h terminal.h \
+  schedule.h GUI/gui.h GUI/vbe.h GUI/../types.h GUI/../lib.h \
+  GUI/graphics.h GUI/text.h
+keyboard.o: keyboard.c keyboard.h lib.h types.h i8259.h terminal.h \
+  syscall.h filesys.h paging.h
+lib.o: lib.c lib.h types.h terminal.h syscall.h filesys.h paging.h
+paging.o: paging.c paging.h types.h lib.h GUI/vbe.h GUI/../types.h \
+  GUI/../lib.h GUI/graphics.h GUI/vbe.h GUI/text.h
+rtc.o: rtc.c rtc.h types.h syscall.h filesys.h paging.h lib.h i8259.h \
+  tests.h terminal.h
+schedule.o: schedule.c schedule.h i8259.h types.h terminal.h syscall.h \
+  filesys.h paging.h x86_desc.h lib.h
+syscall.o: syscall.c syscall.h types.h filesys.h paging.h lib.h \
+  x86_desc.h rtc.h terminal.h
+terminal.o: terminal.c terminal.h types.h keyboard.h syscall.h filesys.h \
+  paging.h lib.h
+tests.o: tests.c tests.h x86_desc.h types.h lib.h i8259.h idt.h rtc.h \
+  syscall.h filesys.h paging.h terminal.h
+graphics.o: GUI/graphics.c GUI/graphics.h GUI/vbe.h GUI/../types.h \
+  GUI/../lib.h GUI/../types.h GUI/text.h
+gui.o: GUI/gui.c GUI/gui.h GUI/vbe.h GUI/../types.h GUI/../lib.h \
+  GUI/../types.h GUI/graphics.h GUI/text.h GUI/../filesys.h GUI/bg.h
+text.o: GUI/text.c GUI/text.h
+vbe.o: GUI/vbe.c GUI/vbe.h GUI/../types.h GUI/../lib.h GUI/../types.h
